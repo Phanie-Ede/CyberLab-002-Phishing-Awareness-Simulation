@@ -21,7 +21,7 @@ My original plan was to run the exercise through GoPhish on a local Ubuntu virtu
 
 I decided to keep GoPhish for email template development and move the public-facing parts of the exercise to Cloudflare and GitHub Pages. This also meant the tracking system could keep running after I shut down the virtual machine.
 
-![Architecture of the deployed simulation](docs/architecture.svg)
+[View the architecture diagram](docs/architecture.svg)
 
 ## How the campaign works
 
@@ -46,7 +46,7 @@ I reused the GoPhish HTML template and generated individual email previews with 
 
 ### Tracking and reporting
 
-The test link produced both a click event and a landing-page visit in Cloudflare. I also discovered that an earlier test using a real participant's link appeared in the engagement report. I preserved that event in the baseline so it would not be mistaken for post-launch employee activity.
+The test link produced both a click event and a landing-page visit in Cloudflare. I also discovered that an earlier test using a real participant's link appeared in the engagement report. I recorded the pre-launch test activity separately so it could be excluded from the final engagement figures without excluding genuine activity from the same participant.
 
 ### Deployment checks
 
@@ -81,7 +81,7 @@ This repository contains the system design and evaluation method rather than ide
 
 ## Evaluation
 
-The campaign is being observed over a seven-day window. The final assessment will distinguish unique participants from repeated events, exclude known setup activity and report clicks, page visits and submission attempts as separate measures. The method and its limitations are documented in [Evaluation methodology](docs/evaluation-methodology.md).
+The campaign is being observed over a seven-day window. The final assessment will distinguish unique participants from repeated events, exclude known setup activity and report clicks, page visits and submission attempts as separate measures. The method and its limitations are documented in [Evaluation methodology](docs/evaluation-plan.md).
 
 The results will be added once the observation period has ended and the findings have been checked for accuracy and approved for public release.
 
@@ -92,8 +92,7 @@ The results will be added once the observation period has ended and the findings
 | `README.md` | Project overview, implementation and validation |
 | `docs/architecture.svg` | System architecture diagram |
 | `docs/architecture.mmd` | Editable Mermaid source for the diagram |
-| `docs/evaluation-methodology.md` | Metrics, exclusions and interpretation of campaign results |
+| `docs/evaluation-plan.md` | Metrics, exclusions and interpretation of campaign results |
 
-The deployed Worker, database schema and mail-sending scripts are not part of this documentation release.
-  
+
 

@@ -1,0 +1,12 @@
+flowchart LR
+  A[GoPhish HTML template] --> B[PowerShell personalisation]
+  C[Validated participant list and token mapping] --> B
+  B --> D[Gmail SMTP]
+  D --> E[Employee mailbox]
+  E --> F[Cloudflare Pages branded link]
+  F --> G[Cloudflare Worker redirect and click event]
+  G --> H[GitHub Pages exercise]
+  H -->|Visit and submission-attempt events| I[Cloudflare Worker event API]
+  G --> J[(Cloudflare D1)]
+  I --> J
+  J --> K[Authenticated report endpoint]

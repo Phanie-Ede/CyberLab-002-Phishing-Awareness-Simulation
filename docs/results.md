@@ -94,4 +94,4 @@ The employee-only figures also rely on my classification of researcher and emplo
 
 I calculated the results from Cloudflare D1 using the corrected UTC reporting window. I excluded the dedicated test ID in the database query, then removed my researcher-controlled company account from the employee-only totals.
 
-This public report uses participant codes rather than employee names or email addresses. It does not include submitted form contents, live campaign links or identifiable infrastructure details. Any screenshots or source code added to the repository should be redacted and approved for public sharing first.
+This public report uses participant codes rather than employee names or email addresses. It does not include submitted form contents, live campaign links or identifiable infrastructure details.

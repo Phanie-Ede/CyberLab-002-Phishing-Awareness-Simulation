@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Health plan verification | Training</title>
+	<style type="text/css">* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #f3f7f5;
+  color: #24352e;
+  font-family: Arial, sans-serif;
+}
+header {
+  background: #01634c;
+  color: white;
+  padding: 22px 18px;
+  text-align: center;
+}
+.brand {
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+header p { margin: 8px 0 0; }
+main {
+  max-width: 540px;
+  margin: 30px auto;
+  padding: 0 16px;
+}
+.card {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 5px 25px #00000012;
+}
+h1 { font-size: 23px; color: #01634c; }
+.notice {
+  background: #eaf5e9;
+  padding: 14px;
+  border-left: 4px solid #85b839;
+  border-radius: 5px;
+  line-height: 1.6;
+}
+label {
+  display: block;
+  margin: 18px 0 7px;
+  font-weight: bold;
+}
+input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #c7d4ce;
+  border-radius: 7px;
+  font-size: 16px;
+}
+button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 15px;
+  background: #01634c;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+footer {
+  text-align: center;
+  padding: 20px;
+  color: #64756d;
+  font-size: 12px;
+}
+#feedback { display: none; line-height: 1.7; }
+	</style>
+</head>
+<body>
+<header>
+<div class="brand">DEMO HEALTH PLAN</div>
+
+<p>Employee health benefits | verification form</p>
+</header>
+
+<main>
+<section class="card">
+<div id="form-section">
+<h1>Health plan enrolment verification</h1>
+
+<p>You may have recently received an HMO enrollee number on your registered mobile phone.</p>
+
+<form action="" autocomplete="off" id="training-form"><label for="name">Full name</label> <input id="name" placeholder="Full name"/> <label for="enrollee">HMO enrollee number</label> <input id="enrollee" placeholder="enrollee number"/> <label for="dob">Date of birth</label> <input id="dob" placeholder="DD/MM/YYYY"/> <label for="nin">National Identification Number (NIN)</label> <input id="nin" placeholder="11-digit number"/> <label for="provider">Preferred healthcare provider</label> <input id="provider" placeholder="Hospital name"/><button type="submit">Complete submission</button></form>
+</div>
+
+<div id="feedback">
+<h1>Security awareness exercise completed</h1>
+
+<p>This page was part of an authorised workplace phishing-awareness simulation.</p>
+
+<p>A genuine-looking health insurance request can still be fraudulent.</p>
+
+<h3>Remember to check:</h3>
+
+<ul>
+	<li>The sender&#39;s actual email address.</li>
+	<li>The destination of links before clicking.</li>
+	<li>Whether the request was expected.</li>
+	<li>Whether sensitive information is necessary.</li>
+	<li>Whether HR or the HMO can verify the request independently.</li>
+</ul>
+
+<p>Never provide your real NIN, insurance identifiers or medical details through an unexpected link.</p>
+</div>
+</section>
+</main>
+
+<footer>Authorised security awareness training</footer>
+
+
+<script>
+  const TRACKER_URL =
+    "https://example-worker.workers.dev";
+
+  // Identify the participant using their unique training link.
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get("token");
+
+  if (urlToken && /^[a-f0-9]{64}$/.test(urlToken)) {
+    sessionStorage.setItem("training_token", urlToken);
+
+    // Remove the token from the visible address bar.
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname
+    );
+  }
+
+  const participantToken =
+    sessionStorage.getItem("training_token");
+
+  // Send only the participant token and event type.
+  // Never send form contents.
+  async function recordTrainingEvent(eventType) {
+    if (!participantToken) return;
+
+    try {
+      const response = await fetch(
+        TRACKER_URL + "/event",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token: participantToken,
+            event: eventType
+          })
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Tracking failed:", response.status);
+      }
+    } catch (error) {
+      console.error("Tracking unavailable:", error);
+    }
+  }
+
+  // Record page visits.
+  recordTrainingEvent("page_visit");
+
+  // Handle the existing training form.
+  document.getElementById("training-form")
+    .addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      // Record the Submit click.
+      recordTrainingEvent("submit_attempt");
+
+      // Count attempts in this browser session.
+      const attempts =
+        Number(
+          sessionStorage.getItem("trainingAttempts") || 0
+        ) + 1;
+
+      sessionStorage.setItem(
+        "trainingAttempts",
+        String(attempts)
+      );
+
+      // Discard form contents without transmitting them.
+      this.reset();
+
+      // Show the existing awareness feedback.
+      document.getElementById("form-section")
+        .style.display = "none";
+
+      document.getElementById("feedback")
+        .style.display = "block";
+
+      document.getElementById("feedback")
+        .scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+    });
+</script>
+
+
+</body></html>

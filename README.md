@@ -1,98 +1,256 @@
 # CyberLab 002: Phishing awareness simulation
 
-An authorised workplace phishing-awareness exercise built around personalised email delivery, cloud-based interaction tracking and campaign reporting.
+An authorised workplace phishing-awareness simulation using personalised emails, cloud-based tracking and event analysis.
 
-**Project status:** Campaign deployed; engagement monitoring in progress  
-**Participants:** 34 employees  
-**Technologies:** GoPhish, Ubuntu Server, VirtualBox, PowerShell, Gmail SMTP, Cloudflare Workers, D1, Cloudflare Pages and GitHub Pages
+**Status:** Completed  
+**Campaign scope:** 33 employees and one researcher account  
+**Observation period:** 11–18 November 2026  
+**Technologies:** GoPhish, Ubuntu Server, VirtualBox, PowerShell, Gmail SMTP, Cloudflare Workers, Cloudflare D1, Cloudflare Pages and GitHub Pages
 
-## What I built
+## Project overview
 
-- Installed GoPhish on an Ubuntu Server virtual machine and accessed its administration interface through SSH port forwarding.
-- Developed and tested an HTML email template for the simulation.
-- Set up a Cloudflare Worker and D1 database to associate participant IDs with tracking links and record interaction events.
-- Configured a branded Cloudflare Pages entry point and a GitHub Pages landing page.
-- Used PowerShell to validate 34 recipients, match each employee to a unique link, generate personalised emails and submit them through Gmail SMTP.
-- Tested the complete email-to-landing-page journey and retrieved engagement data from an authenticated reporting endpoint.
+I built and deployed a phishing-awareness simulation to understand how employees interact with suspicious emails and to gain practical experience with phishing infrastructure, email automation and security monitoring.
 
-## The problem I had to solve
+The exercise involved sending personalised healthcare enrolment emails, directing recipients to a simulated enrolment page and recording their interactions over seven days.
 
-My original plan was to run the exercise through GoPhish on a local Ubuntu virtual machine. The administration interface worked, but the phishing server used a private VirtualBox address. That meant employees outside my lab would not be able to reach its links.
+The campaign was conducted with workplace authorisation. The landing page did not collect passwords, identification numbers or other sensitive form entries.
 
-I decided to keep GoPhish for email template development and move the public-facing parts of the exercise to Cloudflare and GitHub Pages. This also meant the tracking system could keep running after I shut down the virtual machine.
+### Key results
+
+Of the 33 employees included in the campaign, eight had recorded tracking activity during the observation period.
+
+| Metric | Total events | Unique employees |
+| --- | ---: | ---: |
+| Email clicks | 18 | 8 |
+| Landing-page visits | 16 | 8 |
+| Form submission attempts | 1 | 1 |
+
+**Recorded interaction rate: 24.2% (8 of 33 employees).**
+
+These figures represent recorded events, not necessarily deliberate human actions. Automated email-security systems can follow links, so the results should not be treated as a confirmed human click-through rate.
+
+The researcher account and designated test account were excluded from the employee results.
+
+[View the full results](docs/results.md)
+
+## The problem
+
+My original plan was to run the entire simulation through GoPhish on an Ubuntu Server virtual machine.
+
+I installed GoPhish, configured the administration interface and accessed it through SSH port forwarding. However, the phishing server was running on a private VirtualBox IP address, which meant employees outside my lab could not access its landing pages.
+
+I needed a way to make the campaign accessible without exposing the virtual machine to the public internet.
+
+I decided to separate email preparation, message delivery and interaction tracking into different components.
+
+This allowed me to use GoPhish for template development while moving the live campaign infrastructure to cloud-hosted services.
+
+## System architecture
+
+The final setup used four main components:
+
+| Component | Role |
+| --- | --- |
+| GoPhish on Ubuntu Server | Email template development and initial testing |
+| PowerShell and Gmail SMTP | Recipient validation, email personalisation and SMTP submission |
+| Cloudflare Workers and D1 | Tracking-link handling, event storage and reporting |
+| Cloudflare Pages and GitHub Pages | Public-facing campaign entry point and landing page |
 
 [View the architecture diagram](docs/architecture.svg)
 
-## How the campaign works
+### How the system worked
 
-1. Each enrolled employee is associated with an internal ID and a unique tracking token.
-2. PowerShell inserts the employee's first name and branded link into the HTML email template.
-3. Gmail SMTP accepts the personalised messages for delivery.
-4. A click on the branded link passes through Cloudflare, where the click is logged before the visitor is redirected to the landing page.
-5. The landing page reports visits and form submission attempts. Form contents are not collected.
-6. Cloudflare D1 stores the events, and an authenticated endpoint returns participant-level counts for analysis.
+1. **Participant enrolment:** Each account was assigned an internal participant ID and a unique tracking token.
+2. **Email preparation:** PowerShell matched recipient records to tracking links using participant IDs and generated personalised HTML emails.
+3. **Email submission:** The messages were submitted through Gmail SMTP, with each attempt recorded in a CSV log.
+4. **Link tracking:** When a tracking link was requested, Cloudflare handled the request and recorded the corresponding event before redirecting to the landing page.
+5. **Landing-page tracking:** The page reported visits and form submission attempts without transmitting the contents of the form fields.
+6. **Reporting:** Cloudflare D1 stored the events, which were retrieved and analysed after the observation period.
 
-GoPhish is **not** the live tracking backend for the deployed campaign. Email submission and event collection operate independently of the local lab.
+GoPhish was not responsible for sending the final campaign emails or collecting the deployed campaign's engagement data.
 
-## Implementation and testing
+## Implementation
 
-### Recipient and link matching
+### 1. Preparing and validating recipients
 
-I prepared the recipient list, checked for duplicate addresses and confirmed that each of the 34 participants had a distinct tracking link. I matched the email records to links using employee IDs rather than assuming two CSV exports would always have the same row order.
+I prepared the recipient list and checked for duplicate email addresses, missing tracking links and unresolved template placeholders.
 
-### Email delivery
+Because recipient records and tracking tokens came from separate processes, I matched them using participant IDs rather than relying on CSV row positions.
 
-I reused the GoPhish HTML template and generated individual email previews with PowerShell. Before launch, I checked for missing links and unresolved template placeholders. I sent a test message to an external Outlook inbox, reviewed the formatting and followed the link to confirm that the redirect worked.
+This reduced the risk of sending an employee another participant's tracking link.
 
-### Tracking and reporting
+The workflow generated individual HTML email previews, which I reviewed before submission.
 
-The test link produced both a click event and a landing-page visit in Cloudflare. I also discovered that an earlier test using a real participant's link appeared in the engagement report. I recorded the pre-launch test activity separately so it could be excluded from the final engagement figures without excluding genuine activity from the same participant.
+### 2. Automating email submission with PowerShell
 
-### Deployment checks
+I used PowerShell and the .NET `System.Net.Mail` classes to submit the campaign emails through Gmail SMTP.
 
-| Check | Result |
-| --- | ---: |
-| Enrolled employees | 34 |
-| Unique recipient email addresses | 34 |
-| Unique branded tracking links | 34 |
-| Missing or duplicate participant IDs | 0 |
-| Unresolved HTML placeholders | 0 |
-| External email and redirect test | Passed |
-| Cloudflare click and page-visit recording | Passed |
-| Emails accepted by Gmail SMTP | 34 |
+The sending workflow included:
 
-The SMTP result confirms that the mail server accepted the messages. It does not establish that every message reached an inbox or was opened.
+- Creating HTML messages with `MailMessage`.
+- Adding each recipient's email address and personalised message body.
+- Configuring SMTP on port 587 with TLS enabled.
+- Requesting confirmation before starting the campaign.
+- Handling submission errors separately for each recipient.
+- Recording submission status, timestamps and error messages in a CSV file.
+- Disposing of mail and SMTP objects after each attempt.
+- Waiting three seconds between recipient-processing attempts.
 
-## What challenged me
+The script saved the submission log after each attempt, so completed records would remain available if execution was interrupted.
 
-**Getting beyond the lab network.** The first GoPhish links were suitable for local testing but not for an external campaign. Separating the tracking service from the virtual machine solved that problem without exposing the VM publicly.
+All 34 messages were accepted for submission by the SMTP server.
 
-**Keeping identities and links aligned.** Email personalisation and Cloudflare enrolment were separate processes. Using participant IDs to join the records reduced the risk of sending the wrong tracking link to an employee.
+This confirms successful SMTP submission, not delivery to every recipient's inbox.
 
-**Measuring activity accurately.** A test click appeared in the same report as employee activity. That made it clear why a baseline, timestamps and careful interpretation matter. A recorded click is also not definitive proof that a person interacted with the message; automated email-security systems may follow links.
+A sanitised reconstruction of the sending workflow is available in [`src/powershell-smtp-sender.ps1`](src/powershell-smtp-sender.ps1). Some setup details were reconstructed from the recovered commands, and the script has not been independently execution-tested.
 
-**Understanding delivery limits.** An SMTP success message is not the same as confirmed inbox placement. The Outlook test also showed why checking the recipient experience matters.
+### 3. Building the tracking system
+
+I used a Cloudflare Worker to handle tracking requests and a Cloudflare D1 database to store campaign events.
+
+The system recorded three event types:
+
+| Event | Meaning |
+| --- | --- |
+| `email_click` | A request was recorded against a tracking link |
+| `page_visit` | The landing page reported a visit |
+| `submit_attempt` | The landing page reported an attempted form submission |
+
+The Worker used participant identifiers and tracking tokens to associate events with the campaign.
+
+The reporting endpoint required authentication, while the landing page sent only the information needed to record interaction events.
+
+Form contents were not transmitted to the tracking backend.
+
+Sanitised versions of the Worker and landing page are available in the [`src`](src/README.md) directory.
+
+### 4. Testing the campaign
+
+Before sending the campaign emails, I tested the complete journey using an external Outlook inbox.
+
+I checked that:
+
+- The personalised email rendered correctly.
+- The tracking link redirected to the intended landing page.
+- Cloudflare recorded click and page-visit events.
+- The landing page displayed the expected security-awareness feedback.
+- The reporting endpoint returned recorded activity.
+
+During testing, I discovered that a pre-launch interaction using a real participant's tracking link had appeared in the event records.
+
+I addressed this during analysis by using a defined observation window and excluding known test activity.
+
+This was an important lesson in maintaining clean data when testing and live activity share the same infrastructure.
+
+## Campaign results
+
+The observation window ran from **11 November 2026 at 14:02 UTC to 18 November 2026 at 14:02 UTC**.
+
+The analysis covered 33 employees, excluding the researcher account and designated test account.
+
+### Recorded activity
+
+- **8 employees** were associated with 18 email-click events.
+- **8 employees** were associated with 16 landing-page visits.
+- **1 employee** generated a form submission-attempt event.
+
+One participant accounted for 10 of the 18 click events and 8 of the 16 page visits.
+
+This concentration of activity is worth investigating. It may reflect repeated interactions, automated link inspection or a combination of both.
+
+The available records do not establish which explanation is correct.
+
+### What the results tell us
+
+The campaign recorded tracking activity associated with eight employees, representing 24.2% of the employee population.
+
+However, I would not interpret that figure as the percentage of employees who deliberately clicked a phishing email.
+
+Email-security tools can inspect links automatically, and repeated events do not necessarily represent separate actions by an employee.
+
+Similarly, the single submission-attempt event shows that the landing page received an attempt signal. It does not mean that any form contents were collected.
+
+The results are therefore useful for identifying recorded interactions and understanding the limits of the tracking system, rather than making definitive claims about employee behaviour.
+
+The full analysis, exclusions and limitations are documented in [Campaign results](docs/results.md) and [Evaluation methodology](docs/evaluation-plan.md).
+
+## Challenges and lessons learnt
+
+### Moving the campaign beyond my local lab
+
+The GoPhish server worked inside the virtual machine but could not serve external users through its private IP address.
+
+Moving the public-facing infrastructure to Cloudflare and GitHub Pages allowed the campaign to run without keeping the Ubuntu virtual machine online.
+
+It also gave me practical experience connecting independently deployed services.
+
+### Matching recipients to the correct tracking links
+
+Email personalisation and participant enrolment were handled separately.
+
+I used participant IDs to match the records and validated the resulting emails before submission. This was more reliable than assuming the CSV files had identical row orders.
+
+### Handling errors during email submission
+
+The PowerShell workflow used `try`, `catch` and `finally` blocks to handle errors and release resources.
+
+It also saved the CSV log after each attempt.
+
+This made the sending process easier to monitor and reduced the risk of losing submission records if something went wrong.
+
+### Interpreting tracking data
+
+One of the biggest lessons was that collecting events is not the same as understanding them.
+
+A single participant can generate several clicks. Automated security systems may also visit links before an employee sees the message.
+
+I had to separate unique employees from total events, exclude known testing activity and avoid treating every recorded click as a human action.
 
 ## Security and privacy
 
-This was an authorised workplace exercise. The landing page recorded interaction events without collecting passwords, identification numbers or sensitive form entries. The administrative reporting endpoint required authentication.
+This was an authorised workplace simulation.
 
-This repository contains the system design and evaluation method rather than identifiable campaign records. Employee names, email addresses, tracking tokens, credentials and raw reports are not included.
+The landing page was designed to record interaction events without collecting sensitive form contents.
 
-## Evaluation
+The reporting endpoint required authentication, and participant-level records were used for campaign analysis rather than included in the public-facing documentation.
 
-The campaign is being observed over a seven-day window. The final assessment will distinguish unique participants from repeated events, exclude known setup activity and report clicks, page visits and submission attempts as separate measures. The method and its limitations are documented in [Evaluation methodology](docs/evaluation-plan.md).
+The repository contains sanitised source code, architecture documentation and supporting evidence. Employee names, email addresses, live tracking tokens, credentials and raw participant-level reports are not intended for public release.
 
-The results will be added once the observation period has ended and the findings have been checked for accuracy and approved for public release.
+The sanitised source files contain placeholders and should not be treated as ready-to-deploy campaign infrastructure.
 
-## Repository files
+## Limitations
 
-| File | Contents |
+The project had several limitations:
+
+- SMTP acceptance did not confirm delivery to individual inboxes.
+- Recorded clicks could include automated email-security checks.
+- The tracking data could not reliably distinguish every human interaction from automated activity.
+- The campaign involved a relatively small group of employees in one organisation.
+- The reconstructed PowerShell sender has not been independently execution-tested.
+
+These limitations matter because the quality of a security report depends on how accurately the evidence is interpreted.
+
+## Repository structure
+
+| File | Description |
 | --- | --- |
-| `README.md` | Project overview, implementation and validation |
-| `docs/architecture.svg` | System architecture diagram |
-| `docs/architecture.mmd` | Editable Mermaid source for the diagram |
-| `docs/evaluation-plan.md` | Metrics, exclusions and interpretation of campaign results |
+| `README.md` | Project overview, implementation and findings |
+| [`docs/architecture.svg`](docs/architecture.svg) | System architecture diagram |
+| [`docs/architecture.mmd`](docs/architecture.mmd) | Editable Mermaid architecture source |
+| [`docs/evaluation-plan.md`](docs/evaluation-plan.md) | Evaluation methodology and exclusions |
+| [`docs/results.md`](docs/results.md) | Campaign findings and interpretation |
+| [`evidence/README.md`](evidence/README.md) | Evidence index |
+| [`src/README.md`](src/README.md) | Source-code documentation |
+| [`src/worker.js`](src/worker.js) | Sanitised Cloudflare Worker |
+| [`src/index.html`](src/index.html) | Sanitised landing page |
+| [`src/powershell-smtp-sender.ps1`](src/powershell-smtp-sender.ps1) | Reconstructed PowerShell email sender |
 
+## Conclusion
 
+CyberLab 002 gave me practical experience building and testing a phishing-awareness simulation across local and cloud infrastructure.
 
+I worked with SMTP automation, PowerShell scripting, Cloudflare Workers, database event logging, web deployment and campaign analysis.
+
+Beyond getting the system to work, the project taught me the importance of validating data, handling failures and being precise about what security evidence can actually prove.
+
+The final result is a working example of how phishing-awareness infrastructure can be built, monitored and evaluated, including the technical challenges and limitations encountered along the way.
